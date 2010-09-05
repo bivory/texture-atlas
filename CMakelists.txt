@@ -27,6 +27,7 @@ project (texture_atlas)
 
 set (TEXTURE_ATLAS_LIBS)
 
+
 #
 # LibPNG
 #
@@ -51,6 +52,15 @@ set (TEXTURE_PACKER_DIR "${PROJECT_SOURCE_DIR}/texturepacker")
 include_directories (${TEXTURE_PACKER_DIR})
 file (GLOB TEXTURE_PACKER_SRC "${TEXTURE_PACKER_DIR}/*.cpp")
 source_group (texture_packer FILES ${TEXTURE_PACKER_SRC})
+
+
+#
+# Templatized C++ Command Line Parser
+#
+set (TCLAP_DIR "${PROJECT_SOURCE_DIR}/tclap/include")
+include_directories (${TCLAP_DIR})
+file (GLOB TCLAP_DIR_SRC "${TCLAP_DIR}/*.cpp")
+source_group (tclap FILES ${TCLAP_DIR_SRC})
 
 
 #

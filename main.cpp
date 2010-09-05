@@ -28,6 +28,7 @@ THE SOFTWARE.
 
 #include "png.hpp"
 #include "TexturePacker.h"
+#include "tclap/CmdLine.h"
 
 class TextureInfo
    {
