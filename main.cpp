@@ -231,7 +231,11 @@ class TextureAtlasInfoDebugWriteVisitor : public TextureAtlasInfoVisitor
 class TextureAtlasInfoCSVWriteVisitor : public TextureAtlasInfoVisitor
    {
    public:
-   TextureAtlasInfoCSVWriteVisitor(std::string path, size_t w, size_t h) :
+   static std::string name() { return "csv"; }
+
+   TextureAtlasInfoCSVWriteVisitor(std::string path,
+                                   size_t w, size_t h,
+                                   size_t num_packed, size_t unused) :
       out_image_path(path), out_image_width(w), out_image_height(h)
       {
       }
@@ -297,8 +301,13 @@ try
                               "Suppress processing information output.", false);
    cmd.add(quiet_arg);
 
+   std::ostringstream info_writers_oss;
+   info_writers_oss
+      << "Atlas information writers: "
+      << TextureAtlasInfoCSVWriteVisitor::name();
+
    TCLAP::MultiArg<std::string> out_vistors_arg("i", "info_writers",
-                                                "Atlas information writers.",
+                                                info_writers_oss.str(),
                                                 false, "string");
    cmd.add(out_vistors_arg);
 
@@ -313,9 +322,12 @@ try
       out_visitors_str.push_back(TextureAtlasInfoDebugWriteVisitor::name());
       }
 
-#if 0
-   out_visitors_str = out_vistors_arg.getValue();
-#endif
+   std::vector<std::string> out_visitors_arg_strs = out_vistors_arg.getValue();
+   std::vector<std::string>::iterator out_visitors_str_iter
+      = out_visitors_str.end() + 1;
+   out_visitors_str.insert(out_visitors_str_iter,
+                           out_visitors_arg_strs.begin(),
+                           out_visitors_arg_strs.end());
 
    image_names = in_image_names_arg.getValue();
    }
@@ -394,6 +406,14 @@ for(std::list<TextureAtlasInfo *>::iterator atlases_iter = atlases.begin();
       if (vis_iter->compare(TextureAtlasInfoDebugWriteVisitor::name()) == 0)
          {
          taiv = new TextureAtlasInfoDebugWriteVisitor(atlas_name,
+                                                   tai->packedWidth(),
+                                                   tai->packedHeight(),
+                                                   tai->packedCount(),
+                                                   tai->packedUnusedPixels());
+         }
+      else if (vis_iter->compare(TextureAtlasInfoCSVWriteVisitor::name()) == 0)
+         {
+         taiv = new TextureAtlasInfoCSVWriteVisitor(atlas_name,
                                                    tai->packedWidth(),
                                                    tai->packedHeight(),
                                                    tai->packedCount(),
