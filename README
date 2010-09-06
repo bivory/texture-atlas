@@ -42,7 +42,23 @@ Where:
    Creates a texture atlas from a list of PNG files.
 
 Ex:
-./texture-atlas image/128x64.png  image/64x128.png
+Packing three images that are 128x128, 64x64 and 256x256 to 256x256 pixel texture atlases.
+
+$ ./texture-atlas -i csv -x 256 -y 256 image/asteroid.png image/asteroid_mineral.png image/sun.png
+
+Packed 2 images to out_atlas_0.png with 12288 unused area Width (128) x Height (256)
+image/asteroid.png => x: 0 y: 0 width: 128 height: 128
+image/asteroid_mineral.png => x: 0 y: 128 width: 64 height: 64
+
+Packed 1 images to out_atlas_1.png with 0 unused area Width (256) x Height (256)
+image/sun.png => x: 0 y: 0 width: 256 height: 256
+
+
+$ cat out_atlas.csv
+atlas_name, atlas_packed_count, atlas_wasted_pixels, atlas_width, atlas_height, texture_name, texture_rotated_90, texture_width, texture_height, texture_x_offset, texture_y_offset
+out_atlas_0.png, 2, 12288, 128, 256, image/asteroid.png, 0, 128, 128, 0, 0
+out_atlas_0.png, 2, 12288, 128, 256, image/asteroid_mineral.png, 0, 64, 64, 0, 128
+out_atlas_1.png, 1, 0, 256, 256, image/sun.png, 0, 256, 256, 0, 0
 
 
 
@@ -57,4 +73,4 @@ The files in the texture-atlas directory are from John Ratcliff's Texture-Atlas 
 The files found in the tclap directory are from the Templatized C++ Command Line Parser Library hosted at http://tclap.sourceforge.net/ and is licensed under the MIT License.
 
 
-The code not found in those two directories is written by Bryan Ivory and licensed under the MIT License: http://www.opensource.org/licenses/mit-license.php
+The code not found in those directories is written by Bryan Ivory and licensed under the MIT License: http://www.opensource.org/licenses/mit-license.php
