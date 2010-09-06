@@ -139,6 +139,17 @@ for(size_t idx = 0; idx < image_names.size(); idx++)
    try
       {
       TextureInfo ti(idx, image_names[idx]);
+      if (ti.image().get_width() > out_atlas_width ||
+          ti.image().get_height() > out_atlas_height)
+         {
+         std::cerr << "Error: " << ti.path() << " is too big!" << std::endl;
+         std::cerr << "Image dimensions: " <<  ti.image().get_width()
+            << " x " << ti.image().get_height() << std::endl;
+         std::cerr << "Atlas dimensions: " <<  out_atlas_width
+            << " x " << out_atlas_height << std::endl;
+         return 1;
+         }
+
       images.push_back(ti);
       }
    catch(png::std_error &e)
