@@ -58,6 +58,11 @@ class TextureInfo
             png::convert_color_space<png::rgba_pixel>());
       }
 
+      ~TextureInfo(void)
+      {
+      delete im;
+      }
+
       void index(size_t i) { idx = i; }
       int index() const { return idx; }
       std::string path() const { return im_path; }
@@ -110,6 +115,13 @@ class TextureAtlasInfo
       ~TextureAtlasInfo(void)
       {
       delete(atlas);
+
+      for(std::list<TextureInfo *>::iterator images_iter = images.begin();
+          images_iter != images.end();
+          images_iter++)
+         {
+         delete *images_iter;
+         }
       }
 
       bool addTexture(TextureInfo* im_info)
@@ -181,6 +193,7 @@ class TextureAtlasInfoWriteVisitor : public TextureAtlasInfoVisitor
    ~TextureAtlasInfoWriteVisitor(void)
       {
       out_image->write(out_image_path + ".png");
+      delete out_image;
       }
 
    void visitAtlas(TextureAtlasInfo &atlas_info)
@@ -478,6 +491,22 @@ for(std::list<TextureAtlasInfo *>::iterator atlases_iter = atlases.begin();
       TextureAtlasInfoVisitor* taiv = *vis_iter;
       tai->visit(*taiv);
       }
+   }
+
+
+for(std::vector<TextureAtlasInfoVisitor *>::iterator vis_iter
+      = out_visitors.begin();
+    vis_iter != out_visitors.end();
+    vis_iter++)
+   {
+   delete *vis_iter;
+   }
+
+for(std::list<TextureAtlasInfo *>::iterator atlases_iter = atlases.begin();
+    atlases_iter != atlases.end();
+    atlases_iter++, idx++)
+   {
+   delete *atlases_iter;
    }
 
 return 0;
