@@ -257,7 +257,7 @@ public:
   tp->packTextures(new_width, new_height, forcePowerOfTwo, onePixelBorder);
   delete (tp);
 
-  return (new_width < max_wid && new_height < max_hit);
+  return (new_width <= max_wid && new_height <= max_hit);
   }
 
   virtual void  setTextureCount(int tcount) // number of textures to consider..
