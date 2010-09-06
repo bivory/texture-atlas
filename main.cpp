@@ -37,12 +37,14 @@ THE SOFTWARE.
 #define VERSION "2010.09.06"
 
 class TextureInfo;
+class TextureAtlasInfo;
 
 class TextureAtlasInfoVisitor
    {
    public:
-      virtual void visit(TextureInfo &im_info,
-                         int x, int y, int width, int height, bool rot90) = 0;
+      virtual void visitAtlas(TextureAtlasInfo &atlas_info) = 0;
+      virtual void visitTexture(TextureInfo &im_info, int x, int y,
+                                int width, int height, bool rot90) = 0;
    };
 
 class TextureInfo
@@ -139,9 +141,13 @@ class TextureAtlasInfo
       size_t packedUnusedPixels(void) { return atlas_unused_pixels; }
       size_t packedWidth(void) { return atlas_max_width; }
       size_t packedHeight(void) { return atlas_max_height; }
+      void   name(std::string n) { atlas_name = n; }
+      std::string name(void) { return atlas_name; }
 
       void visit(TextureAtlasInfoVisitor &taiv)
       {
+      taiv.visitAtlas(*this);
+
       for(std::list<TextureInfo *>::iterator images_iter = images.begin();
           images_iter != images.end();
           images_iter++)
@@ -152,7 +158,7 @@ class TextureAtlasInfo
          rot90 = atlas->getTextureLocation(im_info->index(),
                                            x, y, width, height);
 
-         taiv.visit(*im_info, x, y, width, height, rot90);
+         taiv.visitTexture(*im_info, x, y, width, height, rot90);
          }
 
       }
@@ -161,6 +167,7 @@ class TextureAtlasInfo
       size_t                           atlas_unused_pixels;
       size_t                           atlas_max_width;
       size_t                           atlas_max_height;
+      std::string                      atlas_name;
       TEXTURE_PACKER::TexturePacker*   atlas;
       std::list<TextureInfo *>         images;
    };
@@ -168,25 +175,29 @@ class TextureAtlasInfo
 class TextureAtlasInfoWriteVisitor : public TextureAtlasInfoVisitor
    {
    public:
-   TextureAtlasInfoWriteVisitor(std::string path, size_t w, size_t h) :
-      out_image_path(path), out_image(w, h)
-      {
-      }
+   TextureAtlasInfoWriteVisitor() {}
 
    ~TextureAtlasInfoWriteVisitor(void)
       {
-      out_image.write(out_image_path + ".png");
+      out_image->write(out_image_path + ".png");
       }
 
-   void visit(TextureInfo &im_info,
-              int x, int y, int width, int height, bool rot90)
+   void visitAtlas(TextureAtlasInfo &atlas_info)
       {
-      im_info.writeTo(out_image, x, y, width, height, rot90);
+      out_image_path = atlas_info.name();
+      out_image = new png::image<png::rgba_pixel>(atlas_info.packedWidth(),
+                                                  atlas_info.packedHeight());
+      }
+
+   void visitTexture(TextureInfo &im_info, int x, int y,
+                     int width, int height, bool rot90)
+      {
+      im_info.writeTo(*out_image, x, y, width, height, rot90);
       }
 
    private:
-   png::image<png::rgba_pixel> out_image;
-   std::string                 out_image_path;
+   png::image<png::rgba_pixel>*  out_image;
+   std::string                   out_image_path;
    };
 
 class TextureAtlasInfoDebugWriteVisitor : public TextureAtlasInfoVisitor
@@ -194,24 +205,25 @@ class TextureAtlasInfoDebugWriteVisitor : public TextureAtlasInfoVisitor
    public:
    static std::string name() { return "debug"; }
 
-   TextureAtlasInfoDebugWriteVisitor(std::string path,
-                                     size_t w, size_t h,
-                                     size_t num_packed, size_t unused) :
-      out_image_path(path), out_image_width(w), out_image_height(h)
-      {
-      std::cout << "Packed " << num_packed << " images to " << path << ".png"
-         << " with " << unused << " unused area "
-         << "Width (" << w << ") x Height (" << h  << ")"
-         << std::endl;
-      }
+   TextureAtlasInfoDebugWriteVisitor() {}
 
    ~TextureAtlasInfoDebugWriteVisitor(void)
       {
       std::cout << std::endl;
       }
 
-   void visit(TextureInfo &im_info,
-              int x, int y, int width, int height, bool rot90)
+   void visitAtlas(TextureAtlasInfo &atlas_info)
+      {
+      std::cout << "Packed " << atlas_info.packedCount() << " images to "
+         << atlas_info.name() << ".png"
+         << " with " << atlas_info.packedUnusedPixels() << " unused area "
+         << "Width (" << atlas_info.packedWidth()
+         << ") x Height (" << atlas_info.packedHeight()  << ")"
+         << std::endl;
+      }
+
+   void visitTexture(TextureInfo &im_info, int x, int y,
+                     int width, int height, bool rot90)
       {
       std::cout << im_info.path() << " => ";
       if (rot90) std::cout << "rotated 90 ";
@@ -221,11 +233,6 @@ class TextureAtlasInfoDebugWriteVisitor : public TextureAtlasInfoVisitor
          << "height: " << height << " "
          << std::endl;
       }
-
-   private:
-   std::string                   out_image_path;
-   size_t                        out_image_width;
-   size_t                        out_image_height;
    };
 
 class TextureAtlasInfoCSVWriteVisitor : public TextureAtlasInfoVisitor
@@ -233,26 +240,16 @@ class TextureAtlasInfoCSVWriteVisitor : public TextureAtlasInfoVisitor
    public:
    static std::string name() { return "csv"; }
 
-   TextureAtlasInfoCSVWriteVisitor(std::string path,
-                                   size_t w, size_t h,
-                                   size_t num_packed, size_t unused) :
-      out_image_path(path), out_image_width(w), out_image_height(h)
+   TextureAtlasInfoCSVWriteVisitor() {}
+
+   ~TextureAtlasInfoCSVWriteVisitor(void) {}
+
+   void visitAtlas(TextureAtlasInfo &atlas_info) {}
+
+   void visitTexture(TextureInfo &im_info, int x, int y,
+                     int width, int height, bool rot90)
       {
       }
-
-   ~TextureAtlasInfoCSVWriteVisitor(void)
-      {
-      }
-
-   void visit(TextureInfo &im_info,
-              int x, int y, int width, int height, bool rot90)
-      {
-      }
-
-   private:
-   std::string                   out_image_path;
-   size_t                        out_image_width;
-   size_t                        out_image_height;
    };
 
 int
@@ -261,7 +258,7 @@ main(int argc, char* argv[])
 std::string                                  out_atlas_name = "";
 size_t                                       out_atlas_height = 0;
 size_t                                       out_atlas_width = 0;
-std::vector<std::string>                     out_visitors_str;
+std::vector<TextureAtlasInfoVisitor *>       out_visitors;
 std::vector<std::string>                     image_names;
 std::list<TextureAtlasInfo *>                atlases;
 
@@ -317,17 +314,22 @@ try
    out_atlas_width = out_atlas_width_arg.getValue();
    out_atlas_height = out_atlas_height_arg.getValue();
 
+   // Texture Atlas Info Visitors
    if (!quiet_arg.getValue())
       {
-      out_visitors_str.push_back(TextureAtlasInfoDebugWriteVisitor::name());
+      out_visitors.push_back(new TextureAtlasInfoDebugWriteVisitor());
       }
 
-   std::vector<std::string> out_visitors_arg_strs = out_vistors_arg.getValue();
-   std::vector<std::string>::iterator out_visitors_str_iter
-      = out_visitors_str.end() + 1;
-   out_visitors_str.insert(out_visitors_str_iter,
-                           out_visitors_arg_strs.begin(),
-                           out_visitors_arg_strs.end());
+   std::vector<std::string> out_visitors_str = out_vistors_arg.getValue();
+   for(std::vector<std::string>::iterator vis_iter = out_visitors_str.begin();
+       vis_iter != out_visitors_str.end();
+       vis_iter++)
+      {
+      if (vis_iter->compare(TextureAtlasInfoCSVWriteVisitor::name()) == 0)
+         {
+         out_visitors.push_back(new TextureAtlasInfoCSVWriteVisitor());
+         }
+      }
 
    image_names = in_image_names_arg.getValue();
    }
@@ -384,49 +386,30 @@ for(std::list<TextureAtlasInfo *>::iterator atlases_iter = atlases.begin();
     atlases_iter != atlases.end();
     atlases_iter++, idx++)
    {
+   TextureAtlasInfo* tai = *atlases_iter;
+
+   // Set the atlas name
    std::ostringstream oss;
    oss << out_atlas_name << "_" << idx;
    std::string atlas_name(oss.str());
+   tai->name(atlas_name);
 
-   TextureAtlasInfo* tai = *atlases_iter;
+   // Pack the atlas
    tai->packTextures();
 
-   TextureAtlasInfoWriteVisitor tai_writer(atlas_name,
-                                           tai->packedWidth(),
-                                           tai->packedHeight());
+   // Write out the atlas
+   TextureAtlasInfoWriteVisitor tai_writer;
    tai->visit(tai_writer);
 
-   // Ugly way to do this.
-   for(std::vector<std::string>::iterator vis_iter = out_visitors_str.begin();
-       vis_iter != out_visitors_str.end();
+   // Visit the atlas and images with all the requested visitors
+   for(std::vector<TextureAtlasInfoVisitor *>::iterator vis_iter
+         = out_visitors.begin();
+       vis_iter != out_visitors.end();
        vis_iter++)
       {
-      TextureAtlasInfoVisitor* taiv = NULL;
-
-      if (vis_iter->compare(TextureAtlasInfoDebugWriteVisitor::name()) == 0)
-         {
-         taiv = new TextureAtlasInfoDebugWriteVisitor(atlas_name,
-                                                   tai->packedWidth(),
-                                                   tai->packedHeight(),
-                                                   tai->packedCount(),
-                                                   tai->packedUnusedPixels());
-         }
-      else if (vis_iter->compare(TextureAtlasInfoCSVWriteVisitor::name()) == 0)
-         {
-         taiv = new TextureAtlasInfoCSVWriteVisitor(atlas_name,
-                                                   tai->packedWidth(),
-                                                   tai->packedHeight(),
-                                                   tai->packedCount(),
-                                                   tai->packedUnusedPixels());
-         }
-
-      if (taiv != NULL)
-         {
-         tai->visit(*taiv);
-         delete taiv;
-         }
+      TextureAtlasInfoVisitor* taiv = *vis_iter;
+      tai->visit(*taiv);
       }
-
    }
 
 return 0;
