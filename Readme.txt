@@ -3,6 +3,36 @@
 This is a simple command line tool that takes a list of PNG image files and creates a somewhat optimized texture atlas. It might rotate images if that will allow the texture atlas to be smaller.
 
 
+
+=== Usage ===
+
+./texture-atlas  [-o <string>] [--] [--version] [-h] <PNG file path> ...
+
+Where:
+   -o <string>,  --out_name <string>
+     Output atlas image's file name.
+
+   --,  --ignore_rest
+     Ignores the rest of the labeled arguments following this flag.
+
+   --version
+     Displays version information and exits.
+
+   -h,  --help
+     Displays usage information and exits.
+
+   <PNG file path>  (accepted multiple times)
+     (required)  List of the image filenames.
+
+
+   Creates a texture atlas from a list of PNG files.
+
+
+Ex:
+./texture-atlas image/128x64.png  image/64x128.png
+
+
+
 === License and Acknowledgements ===
 
 The files in png++ are from the png++ project hosted at http://savannah.nongnu.org/projects/pngpp/ and licensed under a modified BSD license. See the file png++/COPYING for more details.

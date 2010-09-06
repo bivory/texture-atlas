@@ -97,13 +97,13 @@ try
    // Output atlas file name
    TCLAP::ValueArg<std::string> out_atlas_name_arg(
          "o","out_name",
-         "Output atlas image's file name",
+         "Output atlas image's file name.",
          false, "out_atlas", "string");
    cmd.add(out_atlas_name_arg);
 
    // Input image files
    TCLAP::UnlabeledMultiArg<std::string> in_image_names_arg(
-         "in_names", "List of the image filenames", true, "string");
+         "in_names", "List of the image filenames.", true, "PNG file path");
    cmd.add(in_image_names_arg);
 
    cmd.parse(argc, argv);
