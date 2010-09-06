@@ -24,6 +24,7 @@ THE SOFTWARE.
 
 #include <assert.h>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <list>
@@ -240,16 +241,69 @@ class TextureAtlasInfoCSVWriteVisitor : public TextureAtlasInfoVisitor
    public:
    static std::string name() { return "csv"; }
 
-   TextureAtlasInfoCSVWriteVisitor() {}
+   TextureAtlasInfoCSVWriteVisitor(std::string path)
+      {
+      std::ostringstream path_oss;
+      path_oss << path << ".csv";
+      csv_file.open(path_oss.str().c_str(), std::ios::out | std::ios::trunc);
 
-   ~TextureAtlasInfoCSVWriteVisitor(void) {}
+      // Write the header
+      csv_file
+         << "atlas_name" << ", "
+         << "atlas_packed_count" << ", "
+         << "atlas_wasted_pixels" << ", "
+         << "atlas_width" << ", "
+         << "atlas_height" << ", "
 
-   void visitAtlas(TextureAtlasInfo &atlas_info) {}
+         << "texture_name" << ", "
+         << "texture_rotated_90" << ", "
+         << "texture_width" << ", "
+         << "texture_height" << ", "
+         << "texture_x_offset" << ", "
+         << "texture_y_offset"
+         << std::endl;
+      }
+
+   ~TextureAtlasInfoCSVWriteVisitor(void)
+      {
+      csv_file.close();
+      }
+
+   void visitAtlas(TextureAtlasInfo &atlas_info)
+      {
+      atlas_name = atlas_info.name();
+      atlas_packed_count = atlas_info.packedCount();
+      atlas_unused_pixels = atlas_info.packedUnusedPixels();
+      atlas_width = atlas_info.packedWidth();
+      atlas_height = atlas_info.packedHeight();
+      }
 
    void visitTexture(TextureInfo &im_info, int x, int y,
                      int width, int height, bool rot90)
       {
+      csv_file
+         << atlas_name << ".png" << ", "
+         << atlas_packed_count << ", "
+         << atlas_unused_pixels << ", "
+         << atlas_width << ", "
+         << atlas_height << ", "
+
+         << im_info.path() << ", "
+         << rot90 << ", "
+         << width << ", "
+         << height << ", "
+         << x << ", "
+         << y
+         << std::endl;
       }
+
+   private:
+   std::ofstream     csv_file;
+   std::string       atlas_name;
+   size_t            atlas_packed_count;
+   size_t            atlas_unused_pixels;
+   size_t            atlas_width;
+   size_t            atlas_height;
    };
 
 int
@@ -327,7 +381,8 @@ try
       {
       if (vis_iter->compare(TextureAtlasInfoCSVWriteVisitor::name()) == 0)
          {
-         out_visitors.push_back(new TextureAtlasInfoCSVWriteVisitor());
+         out_visitors.push_back(
+               new TextureAtlasInfoCSVWriteVisitor(out_atlas_name));
          }
       }
 

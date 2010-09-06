@@ -7,10 +7,15 @@ This is a simple command line tool that takes a list of PNG image files and crea
 === Usage ===
 
 USAGE:
-   ./texture-atlas  [-y <pixels>] [-x <pixels>] [-o <string>] [--]
-                    [--version] [-h] <PNG file path> ...
+   ./texture-atlas  [-i <string>] ...  [-q] [-y <pixels>] [-x <pixels>] [-o
+                    <string>] [--] [--version] [-h] <PNG file path> ...
 
 Where:
+   -i <string>,  --info_writers <string>  (accepted multiple times)
+     Atlas information writers: csv
+
+   -q,  --quiet
+     Suppress processing information output.
 
    -y <pixels>,  --out_height <pixels>
      Maximum output atlas image's height.
@@ -35,7 +40,6 @@ Where:
 
 
    Creates a texture atlas from a list of PNG files.
-
 
 Ex:
 ./texture-atlas image/128x64.png  image/64x128.png
