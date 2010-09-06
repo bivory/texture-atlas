@@ -6,9 +6,18 @@ This is a simple command line tool that takes a list of PNG image files and crea
 
 === Usage ===
 
-./texture-atlas  [-o <string>] [--] [--version] [-h] <PNG file path> ...
+USAGE:
+   ./texture-atlas  [-y <pixels>] [-x <pixels>] [-o <string>] [--]
+                    [--version] [-h] <PNG file path> ...
 
 Where:
+
+   -y <pixels>,  --out_height <pixels>
+     Maximum output atlas image's height.
+
+   -x <pixels>,  --out_width <pixels>
+     Maximum output atlas image's width.
+
    -o <string>,  --out_name <string>
      Output atlas image's file name.
 

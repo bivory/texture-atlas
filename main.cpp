@@ -84,8 +84,8 @@ int
 main(int argc, char* argv[])
 {
 std::string                out_atlas_name = "";
-int                        out_atlas_height = 256;
-int                        out_atlas_width = 256;
+size_t                     out_atlas_height = 0;
+size_t                     out_atlas_width = 0;
 std::vector<std::string>   image_names;
 
 // Read in the command line arguements
@@ -101,6 +101,19 @@ try
          false, "out_atlas", "string");
    cmd.add(out_atlas_name_arg);
 
+   // Output atlas image dimensions
+   TCLAP::ValueArg<size_t> out_atlas_width_arg(
+         "x","out_width",
+         "Maximum output atlas image's width.",
+         false, 1024, "pixels");
+   cmd.add(out_atlas_width_arg);
+
+   TCLAP::ValueArg<size_t> out_atlas_height_arg(
+         "y","out_height",
+         "Maximum output atlas image's height.",
+         false, 1024, "pixels");
+   cmd.add(out_atlas_height_arg);
+
    // Input image files
    TCLAP::UnlabeledMultiArg<std::string> in_image_names_arg(
          "in_names", "List of the image filenames.", true, "PNG file path");
@@ -108,6 +121,8 @@ try
 
    cmd.parse(argc, argv);
    out_atlas_name = out_atlas_name_arg.getValue();
+   out_atlas_width = out_atlas_width_arg.getValue();
+   out_atlas_height = out_atlas_height_arg.getValue();
    image_names = in_image_names_arg.getValue();
    }
 catch (TCLAP::ArgException &e)
@@ -145,15 +160,20 @@ for(
    tp->addTexture(im.get_width(), im.get_height());
    }
 // Force power of two, no pixel border
-size_t unused_area = tp->packTextures(out_atlas_width,
-      out_atlas_height, true, false);
+int act_out_atlas_width = 0;
+int act_out_atlas_height = 0;
+size_t unused_area = tp->packTextures(act_out_atlas_width,
+      act_out_atlas_height, true, false);
 
 std::cout << "Packed " << image_names.size() << " with "
-          << unused_area << " unused area" << std::endl;
+         << unused_area << " unused area: "
+         << "Width (" << act_out_atlas_width
+         << ") x Height (" << act_out_atlas_height << ")"
+         << std::endl;
 
 
 // Output the packed textures
-png::image<png::rgb_pixel> out_image(out_atlas_width, out_atlas_height);
+png::image<png::rgb_pixel> out_image(act_out_atlas_width, act_out_atlas_height);
 for(
  std::list<TextureInfo>::iterator images_iter = images.begin();
  images_iter != images.end();
