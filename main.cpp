@@ -147,9 +147,9 @@ class TextureAtlasInfo
                                            x, y, width, height);
          im_info->writeTo(out_image, x, y, width, height, rot90);
 #if 1
-         std::cout << im_info->path() << " => "
-            << "rotated 90: " << rot90 << " "
-            << "x: " << x << " "
+         std::cout << im_info->path() << " => ";
+         if (rot90) std::cout << "rotated 90 ";
+         std::cout  << "x: " << x << " "
             << "y: " << y << " "
             << "width: " << width << " "
             << "height: " << height << " "
