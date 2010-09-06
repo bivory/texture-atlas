@@ -25,10 +25,14 @@ THE SOFTWARE.
 #include <iostream>
 #include <string>
 #include <list>
+#include <vector>
 
 #include "png.hpp"
 #include "TexturePacker.h"
 #include "tclap/CmdLine.h"
+
+
+#define VERSION "2010.09.05"
 
 class TextureInfo
    {
@@ -79,17 +83,54 @@ class TextureInfo
 int
 main(int argc, char* argv[])
 {
-int   out_im_height = 256;
-int   out_im_width = 256;
+std::string                out_atlas_name = "";
+int                        out_atlas_height = 256;
+int                        out_atlas_width = 256;
+std::vector<std::string>   image_names;
+
+// Read in the command line arguements
+try
+   {
+   TCLAP::CmdLine cmd("Creates a texture atlas from a list of PNG files.",
+                      ' ', VERSION, true);
+
+   // Output atlas file name
+   TCLAP::ValueArg<std::string> out_atlas_name_arg(
+         "o","out_name",
+         "Output atlas image's file name",
+         false, "out_atlas", "string");
+   cmd.add(out_atlas_name_arg);
+
+   // Input image files
+   TCLAP::UnlabeledMultiArg<std::string> in_image_names_arg(
+         "in_names", "List of the image filenames", true, "string");
+   cmd.add(in_image_names_arg);
+
+   cmd.parse(argc, argv);
+   out_atlas_name = out_atlas_name_arg.getValue();
+   image_names = in_image_names_arg.getValue();
+   }
+catch (TCLAP::ArgException &e)
+   {
+   std::cerr << "Error: " << e.error() << " for arg " << e.argId() << std::endl;
+   return 1;
+   }
+
 
 // Create the ist of texture to pack
-size_t texture_count = argc - 1;
-char** textures = &argv[1];
 std::list<TextureInfo> images;
-for(size_t idx = 0; idx < texture_count; idx++)
+for(size_t idx = 0; idx < image_names.size(); idx++)
    {
-   TextureInfo ti(idx, textures[idx]);
-   images.push_back(ti);
+   try
+      {
+      TextureInfo ti(idx, image_names[idx]);
+      images.push_back(ti);
+      }
+   catch(png::std_error &e)
+      {
+      std::cerr << e.what() << std::endl;
+      return 1;
+      }
    }
 
 // Pack the textures
@@ -104,14 +145,15 @@ for(
    tp->addTexture(im.get_width(), im.get_height());
    }
 // Force power of two, no pixel border
-size_t unused_area = tp->packTextures(out_im_width, out_im_height, true, false);
+size_t unused_area = tp->packTextures(out_atlas_width,
+      out_atlas_height, true, false);
 
-std::cout << "Packed " << texture_count << " with "
+std::cout << "Packed " << image_names.size() << " with "
           << unused_area << " unused area" << std::endl;
 
 
 // Output the packed textures
-png::image<png::rgb_pixel> out_image(out_im_width, out_im_height);
+png::image<png::rgb_pixel> out_image(out_atlas_width, out_atlas_height);
 for(
  std::list<TextureInfo>::iterator images_iter = images.begin();
  images_iter != images.end();
@@ -131,7 +173,7 @@ for(
 
    images_iter->writeTo(out_image, x, y, width, height, rot90);
    }
-out_image.write("out_image.png");
+out_image.write(out_atlas_name + ".png");
 
 return 0;
 }
