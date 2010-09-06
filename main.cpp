@@ -192,6 +192,8 @@ class TextureAtlasInfoWriteVisitor : public TextureAtlasInfoVisitor
 class TextureAtlasInfoDebugWriteVisitor : public TextureAtlasInfoVisitor
    {
    public:
+   static std::string name() { return "debug"; }
+
    TextureAtlasInfoDebugWriteVisitor(std::string path,
                                      size_t w, size_t h,
                                      size_t num_packed, size_t unused) :
@@ -255,6 +257,7 @@ main(int argc, char* argv[])
 std::string                                  out_atlas_name = "";
 size_t                                       out_atlas_height = 0;
 size_t                                       out_atlas_width = 0;
+std::vector<std::string>                     out_visitors_str;
 std::vector<std::string>                     image_names;
 std::list<TextureAtlasInfo *>                atlases;
 
@@ -289,10 +292,31 @@ try
          "in_names", "List of the image filenames.", true, "PNG file path");
    cmd.add(in_image_names_arg);
 
+   // Output visitors
+   TCLAP::SwitchArg quiet_arg("q", "quiet",
+                              "Suppress processing information output.", false);
+   cmd.add(quiet_arg);
+
+   TCLAP::MultiArg<std::string> out_vistors_arg("i", "info_writers",
+                                                "Atlas information writers.",
+                                                false, "string");
+   cmd.add(out_vistors_arg);
+
+   // Parse the command line options
    cmd.parse(argc, argv);
    out_atlas_name = out_atlas_name_arg.getValue();
    out_atlas_width = out_atlas_width_arg.getValue();
    out_atlas_height = out_atlas_height_arg.getValue();
+
+   if (!quiet_arg.getValue())
+      {
+      out_visitors_str.push_back(TextureAtlasInfoDebugWriteVisitor::name());
+      }
+
+#if 0
+   out_visitors_str = out_vistors_arg.getValue();
+#endif
+
    image_names = in_image_names_arg.getValue();
    }
 catch (TCLAP::ArgException &e)
@@ -358,13 +382,31 @@ for(std::list<TextureAtlasInfo *>::iterator atlases_iter = atlases.begin();
    TextureAtlasInfoWriteVisitor tai_writer(atlas_name,
                                            tai->packedWidth(),
                                            tai->packedHeight());
-   TextureAtlasInfoDebugWriteVisitor tai_debug(atlas_name,
-                                               tai->packedWidth(),
-                                               tai->packedHeight(),
-                                               tai->packedCount(),
-                                               tai->packedUnusedPixels());
    tai->visit(tai_writer);
-   tai->visit(tai_debug);
+
+   // Ugly way to do this.
+   for(std::vector<std::string>::iterator vis_iter = out_visitors_str.begin();
+       vis_iter != out_visitors_str.end();
+       vis_iter++)
+      {
+      TextureAtlasInfoVisitor* taiv = NULL;
+
+      if (vis_iter->compare(TextureAtlasInfoDebugWriteVisitor::name()) == 0)
+         {
+         taiv = new TextureAtlasInfoDebugWriteVisitor(atlas_name,
+                                                   tai->packedWidth(),
+                                                   tai->packedHeight(),
+                                                   tai->packedCount(),
+                                                   tai->packedUnusedPixels());
+         }
+
+      if (taiv != NULL)
+         {
+         tai->visit(*taiv);
+         delete taiv;
+         }
+      }
+
    }
 
 return 0;
