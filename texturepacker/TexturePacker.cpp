@@ -235,6 +235,31 @@ public:
     }
   }
 
+  virtual bool  wouldTextureFit(int wid, int hit,
+                                bool forcePowerOfTwo,bool onePixelBorder,
+                                int max_wid, int max_hit)
+  {
+  // Inefficient way to go about this.
+  TEXTURE_PACKER::TexturePacker *tp = TEXTURE_PACKER::createTexturePacker();
+  tp->setTextureCount(getTextureCount() + 1);
+
+  // Add the existing textures
+  for(size_t idx = 0; idx < getTextureCount(); idx++)
+     {
+     tp->addTexture(mTextures[idx].mWidth, mTextures[idx].mHeight);
+     }
+
+  // Add the new texture
+  tp->addTexture(wid, hit);
+
+  // Pack it
+  int new_width = 0, new_height = 0;
+  tp->packTextures(new_width, new_height, forcePowerOfTwo, onePixelBorder);
+  delete (tp);
+
+  return (new_width < max_wid && new_height < max_hit);
+  }
+
   virtual void  setTextureCount(int tcount) // number of textures to consider..
   {
     reset();

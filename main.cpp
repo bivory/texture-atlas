@@ -143,9 +143,9 @@ for(size_t idx = 0; idx < image_names.size(); idx++)
           ti.image().get_height() > out_atlas_height)
          {
          std::cerr << "Error: " << ti.path() << " is too big!" << std::endl;
-         std::cerr << "Image dimensions: " <<  ti.image().get_width()
+         std::cerr << "Image dimensions: " << ti.image().get_width()
             << " x " << ti.image().get_height() << std::endl;
-         std::cerr << "Atlas dimensions: " <<  out_atlas_width
+         std::cerr << "Atlas dimensions: " << out_atlas_width
             << " x " << out_atlas_height << std::endl;
          return 1;
          }
@@ -168,6 +168,22 @@ for(
  images_iter++)
    {
    png::image<png::rgb_pixel> im = images_iter->image();
+   bool fit = tp->wouldTextureFit(im.get_width(), im.get_height(),
+                                  true, false,
+                                  out_atlas_width, out_atlas_height);
+
+   if (!fit)
+      {
+      std::cerr << "Error: Too many large textures!" << std::endl;
+      std::cerr << images_iter->path()
+         << " went over the atlas size limit," << std::endl;
+      std::cerr << "Image dimensions: " << images_iter->image().get_width()
+         << " x " << images_iter->image().get_height() << std::endl;
+      std::cerr << "Maximum Atlas dimensions: " << out_atlas_width
+         << " x " << out_atlas_height << std::endl;
+
+      return 1;
+      }
    tp->addTexture(im.get_width(), im.get_height());
    }
 // Force power of two, no pixel border
@@ -176,8 +192,9 @@ int act_out_atlas_height = 0;
 size_t unused_area = tp->packTextures(act_out_atlas_width,
       act_out_atlas_height, true, false);
 
-std::cout << "Packed " << image_names.size() << " with "
-         << unused_area << " unused area: "
+std::cout << "Packed " << image_names.size() << " images to "
+         << out_atlas_name + ".png"
+         << " with " << unused_area << " unused area: "
          << "Width (" << act_out_atlas_width
          << ") x Height (" << act_out_atlas_height << ")"
          << std::endl;
@@ -206,6 +223,7 @@ for(
    }
 out_image.write(out_atlas_name + ".png");
 
+delete(tp);
 return 0;
 }
 
