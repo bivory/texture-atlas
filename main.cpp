@@ -416,9 +416,22 @@ for(size_t idx = 0; idx < image_names.size(); idx++)
          return 1;
          }
 
-      // Add to the atlas
-      TextureAtlasInfo* tai = atlases.back();
-      if (!tai->addTexture(ti))
+      // Add to the first atlas that has room
+      bool added_texture = false;
+      for(std::list<TextureAtlasInfo *>::iterator atlases_iter
+            = atlases.begin();
+            atlases_iter != atlases.end();
+            atlases_iter++, idx++)
+         {
+         TextureAtlasInfo* tai = *atlases_iter;
+         if (tai->addTexture(ti))
+            {
+            added_texture = true;
+            break;
+            }
+         }
+
+      if (!added_texture)
          {
          // Create a new atlas
          TextureAtlasInfo* tai_next = new TextureAtlasInfo(out_atlas_width,
