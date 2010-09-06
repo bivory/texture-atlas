@@ -255,6 +255,11 @@ public:
     }
   }
 
+  int getTextureCount(void)
+  {
+  return mTextureIndex;
+  }
+
   virtual void newFree(int x,int y,int wid,int hit)
   {
     Node *node = new Node(x,y,wid,hit);
@@ -279,7 +284,7 @@ public:
 
     if ( onePixelBorder )
     {
-      for (int i=0; i<mTextureCount; i++)
+      for (int i=0; i < getTextureCount(); i++)
       {
         Texture &t = mTextures[i];
         t.mWidth+=2;
@@ -301,7 +306,7 @@ public:
     newFree(0,0,width,height);
 
     // We must place each texture
-    for (int i=0; i<mTextureCount; i++)
+    for (int i=0; i<getTextureCount(); i++)
     {
 
       int index = 0;
@@ -310,7 +315,7 @@ public:
 
       // We first search for the texture with the longest edge, placing it first.
       // And the most area...
-      for (int j=0; j<mTextureCount; j++)
+      for (int j=0; j<getTextureCount(); j++)
       {
 
         Texture &t = mTextures[j];
@@ -496,7 +501,7 @@ public:
     }
 
     height = 0;
-    for (int i=0; i<mTextureCount; i++)
+    for (int i=0; i<getTextureCount(); i++)
     {
       Texture &t = mTextures[i];
       if ( onePixelBorder )
