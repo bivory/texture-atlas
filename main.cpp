@@ -42,7 +42,8 @@ class TextureInfo
       TextureInfo(int index, std::string path)
          : idx(index), im_path(path)
       {
-      im = new png::image<png::rgba_pixel>(im_path);
+      im = new png::image<png::rgba_pixel>(im_path,
+            png::convert_color_space<png::rgba_pixel>());
       }
 
       void index(size_t i) { idx = i; }
