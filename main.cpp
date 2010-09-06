@@ -42,15 +42,15 @@ class TextureInfo
       TextureInfo(int index, std::string path)
          : idx(index), im_path(path)
       {
-      im = new png::image<png::rgb_pixel>(im_path);
+      im = new png::image<png::rgba_pixel>(im_path);
       }
 
       void index(size_t i) { idx = i; }
       int index() const { return idx; }
       std::string path() const { return im_path; }
-      png::image<png::rgb_pixel>* image() const { return im; }
+      png::image<png::rgba_pixel>* image() const { return im; }
 
-      void writeTo(png::image< png::rgb_pixel > &outimage,
+      void writeTo(png::image< png::rgba_pixel > &outimage,
                    const size_t offset_x, const size_t offset_y,
                    const size_t out_width, const size_t out_height,
                    const bool rotate90)
@@ -63,7 +63,7 @@ class TextureInfo
                {
                size_t rot_y = im->get_height() - (out_x - offset_x) - 1;
                size_t rot_x = (out_y - offset_y);
-               png::rgb_pixel px = (*im)[rot_y][rot_x];
+               png::rgba_pixel px = (*im)[rot_y][rot_x];
                outimage[out_y][out_x] = px;
                }
             else
@@ -79,7 +79,7 @@ class TextureInfo
    private:
       int                           idx;
       std::string                   im_path;
-      png::image<png::rgb_pixel>*   im;
+      png::image<png::rgba_pixel>*   im;
    };
 
 
@@ -101,7 +101,7 @@ class TextureAtlasInfo
 
       bool addTexture(TextureInfo* im_info)
       {
-      png::image<png::rgb_pixel>* im = im_info->image();
+      png::image<png::rgba_pixel>* im = im_info->image();
       bool fit = atlas->wouldTextureFit(im->get_width(), im->get_height(),
                                         true, false,
                                         atlas_max_width, atlas_max_height);
@@ -132,7 +132,7 @@ class TextureAtlasInfo
 
       void write(std::string path)
       {
-      png::image<png::rgb_pixel> out_image(atlas_max_width,
+      png::image<png::rgba_pixel> out_image(atlas_max_width,
                                            atlas_max_height);
 
       for(std::list<TextureInfo *>::iterator images_iter = images.begin();
