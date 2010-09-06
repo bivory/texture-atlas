@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+#include <assert.h>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -41,13 +42,13 @@ class TextureInfo
       TextureInfo(int index, std::string path)
          : idx(index), im_path(path)
       {
-      im = png::image<png::rgb_pixel>(im_path);
+      im = new png::image<png::rgb_pixel>(im_path);
       }
 
       void index(size_t i) { idx = i; }
       int index() const { return idx; }
       std::string path() const { return im_path; }
-      png::image< png::rgb_pixel > image() const { return im; }
+      png::image<png::rgb_pixel>* image() const { return im; }
 
       void writeTo(png::image< png::rgb_pixel > &outimage,
                    const size_t offset_x, const size_t offset_y,
@@ -60,16 +61,16 @@ class TextureInfo
             {
             if (rotate90)
                {
-               size_t rot_y = im.get_height() - (out_x - offset_x) - 1;
+               size_t rot_y = im->get_height() - (out_x - offset_x) - 1;
                size_t rot_x = (out_y - offset_y);
-               png::rgb_pixel px = im[rot_y][rot_x];
+               png::rgb_pixel px = (*im)[rot_y][rot_x];
                outimage[out_y][out_x] = px;
                }
             else
                {
                size_t rot_y = out_y - offset_y;
                size_t rot_x = out_x - offset_x;
-               outimage[out_y][out_x] = im[rot_y][rot_x];
+               outimage[out_y][out_x] = (*im)[rot_y][rot_x];
                }
             }
          }
@@ -78,7 +79,7 @@ class TextureInfo
    private:
       int                           idx;
       std::string                   im_path;
-      png::image< png::rgb_pixel >  im;
+      png::image<png::rgb_pixel>*   im;
    };
 
 
@@ -93,10 +94,15 @@ class TextureAtlasInfo
       atlas->setTextureCount(im_count);
       }
 
-      bool addTexture(TextureInfo &im_info)
+      ~TextureAtlasInfo(void)
       {
-      png::image<png::rgb_pixel> im = im_info.image();
-      bool fit = atlas->wouldTextureFit(im.get_width(), im.get_height(),
+      delete(atlas);
+      }
+
+      bool addTexture(TextureInfo* im_info)
+      {
+      png::image<png::rgb_pixel>* im = im_info->image();
+      bool fit = atlas->wouldTextureFit(im->get_width(), im->get_height(),
                                         true, false,
                                         atlas_max_width, atlas_max_height);
 
@@ -105,8 +111,8 @@ class TextureAtlasInfo
          return false;
          }
 
-      atlas->addTexture(im.get_width(), im.get_height());
-      im_info.index(atlas->getTextureCount() - 1);
+      atlas->addTexture(im->get_width(), im->get_height());
+      im_info->index(atlas->getTextureCount() - 1);
       images.push_back(im_info);
       return true;
       }
@@ -129,18 +135,19 @@ class TextureAtlasInfo
       png::image<png::rgb_pixel> out_image(atlas_max_width,
                                            atlas_max_height);
 
-      for(std::list<TextureInfo>::iterator images_iter = images.begin();
+      for(std::list<TextureInfo *>::iterator images_iter = images.begin();
           images_iter != images.end();
           images_iter++)
          {
+         TextureInfo* im_info = *images_iter;
+         assert(im_info != NULL);
          int x, y, width, height;
          bool rot90;
-         rot90 = atlas->getTextureLocation(images_iter->index(),
+         rot90 = atlas->getTextureLocation(im_info->index(),
                                            x, y, width, height);
-         images_iter->writeTo(out_image, x, y, width, height, rot90);
-
+         im_info->writeTo(out_image, x, y, width, height, rot90);
 #if 1
-         std::cout   << images_iter->path() << " => "
+         std::cout << im_info->path() << " => "
             << "rotated 90: " << rot90 << " "
             << "x: " << x << " "
             << "y: " << y << " "
@@ -159,7 +166,7 @@ class TextureAtlasInfo
       size_t                           atlas_max_width;
       size_t                           atlas_max_height;
       TEXTURE_PACKER::TexturePacker*   atlas;
-      std::list<TextureInfo>           images;
+      std::list<TextureInfo *>         images;
    };
 
 
@@ -170,7 +177,7 @@ std::string                                  out_atlas_name = "";
 size_t                                       out_atlas_height = 0;
 size_t                                       out_atlas_width = 0;
 std::vector<std::string>                     image_names;
-std::list<TextureAtlasInfo>                  atlases;
+std::list<TextureAtlasInfo *>                atlases;
 
 // Read in the command line arguements
 try
@@ -215,26 +222,39 @@ catch (TCLAP::ArgException &e)
    return 1;
    }
 
+// Create the initial texture atlas
+atlases.push_back(new TextureAtlasInfo(out_atlas_width, out_atlas_height,
+                                       image_names.size()));
 
-// Create the list of images to pack and load the images
-std::list<TextureInfo> images;
+// Load the textures
 for(size_t idx = 0; idx < image_names.size(); idx++)
    {
    try
       {
-      TextureInfo ti(idx, image_names[idx]);
-      if (ti.image().get_width() > out_atlas_width ||
-          ti.image().get_height() > out_atlas_height)
+      // Load the image
+      TextureInfo* ti = new TextureInfo(idx, image_names[idx]);
+      if (ti->image()->get_width() > out_atlas_width ||
+          ti->image()->get_height() > out_atlas_height)
          {
-         std::cerr << "Error: " << ti.path() << " is too big!" << std::endl;
-         std::cerr << "Image dimensions: " << ti.image().get_width()
-            << " x " << ti.image().get_height() << std::endl;
+         std::cerr << "Error: " << ti->path() << " is too big!" << std::endl;
+         std::cerr << "Image dimensions: " << ti->image()->get_width()
+            << " x " << ti->image()->get_height() << std::endl;
          std::cerr << "Atlas dimensions: " << out_atlas_width
             << " x " << out_atlas_height << std::endl;
          return 1;
          }
 
-      images.push_back(ti);
+      // Add to the atlas
+      TextureAtlasInfo* tai = atlases.back();
+      if (!tai->addTexture(ti))
+         {
+         // Create a new atlas
+         TextureAtlasInfo* tai_next = new TextureAtlasInfo(out_atlas_width,
+                                                           out_atlas_height,
+                                                           image_names.size());
+         tai_next->addTexture(ti);
+         atlases.push_back(tai_next);
+         }
       }
    catch(png::std_error &e)
       {
@@ -243,33 +263,9 @@ for(size_t idx = 0; idx < image_names.size(); idx++)
       }
    }
 
-// Create the initial texture atlas
-atlases.push_back(TextureAtlasInfo(out_atlas_width,
-                                   out_atlas_height,
-                                   images.size()));
-
-// Pack the textures
-for(
- std::list<TextureInfo>::iterator images_iter = images.begin();
- images_iter != images.end();
- images_iter++)
-   {
-   TextureAtlasInfo tai = atlases.back();
-   bool added = tai.addTexture(*images_iter);
-
-   if (!added)
-      {
-      // Create a new atlas
-      TextureAtlasInfo tai_next(out_atlas_width,
-                                out_atlas_height,
-                                images.size());
-      tai_next.addTexture(*images_iter);
-      atlases.push_back(tai_next);
-      }
-   }
-
+// Pack and write out the atlases
 int idx = 0;
-for(std::list<TextureAtlasInfo>::iterator atlases_iter = atlases.begin();
+for(std::list<TextureAtlasInfo *>::iterator atlases_iter = atlases.begin();
     atlases_iter != atlases.end();
     atlases_iter++, idx++)
    {
@@ -277,15 +273,16 @@ for(std::list<TextureAtlasInfo>::iterator atlases_iter = atlases.begin();
    oss << out_atlas_name << "_" << idx;
    std::string atlas_name(oss.str());
 
-   atlases_iter->packTextures();
-   std::cout << "Packed " << atlases_iter->packedCount() << " images to "
+   TextureAtlasInfo* tai = *atlases_iter;
+   tai->packTextures();
+   std::cout << "Packed " << tai->packedCount() << " images to "
       << atlas_name
-      << " with " << atlases_iter->packedUnusedPixels() << " unused area "
-      << "Width (" << atlases_iter->packedWidth()
-      << ") x Height (" << atlases_iter->packedHeight()  << ")"
+      << " with " << tai->packedUnusedPixels() << " unused area "
+      << "Width (" << tai->packedWidth()
+      << ") x Height (" << tai->packedHeight()  << ")"
       << std::endl;
 
-   atlases_iter->write(atlas_name);
+   tai->write(atlas_name);
    }
 
 return 0;
