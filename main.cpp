@@ -34,7 +34,16 @@ THE SOFTWARE.
 #include "tclap/CmdLine.h"
 
 
-#define VERSION "2010.09.05"
+#define VERSION "2010.09.06"
+
+class TextureInfo;
+
+class TextureAtlasInfoVisitor
+   {
+   public:
+      virtual void visit(TextureInfo &im_info,
+                         int x, int y, int width, int height, bool rot90) = 0;
+   };
 
 class TextureInfo
    {
@@ -131,22 +140,19 @@ class TextureAtlasInfo
       size_t packedWidth(void) { return atlas_max_width; }
       size_t packedHeight(void) { return atlas_max_height; }
 
-      void write(std::string path)
+      void visit(TextureAtlasInfoVisitor &taiv)
       {
-      png::image<png::rgba_pixel> out_image(atlas_max_width,
-                                           atlas_max_height);
-
       for(std::list<TextureInfo *>::iterator images_iter = images.begin();
           images_iter != images.end();
           images_iter++)
          {
          TextureInfo* im_info = *images_iter;
-         assert(im_info != NULL);
          int x, y, width, height;
          bool rot90;
          rot90 = atlas->getTextureLocation(im_info->index(),
                                            x, y, width, height);
-         im_info->writeTo(out_image, x, y, width, height, rot90);
+
+         taiv.visit(*im_info, x, y, width, height, rot90);
 #if 1
          std::cout << im_info->path() << " => ";
          if (rot90) std::cout << "rotated 90 ";
@@ -156,10 +162,8 @@ class TextureAtlasInfo
             << "height: " << height << " "
             << std::endl;
 #endif
-
          }
 
-      out_image.write(path + ".png");
       }
 
    private:
@@ -170,6 +174,29 @@ class TextureAtlasInfo
       std::list<TextureInfo *>         images;
    };
 
+class TextureAtlasInfoWriteVisitor : public TextureAtlasInfoVisitor
+   {
+   public:
+   TextureAtlasInfoWriteVisitor(std::string path, size_t w, size_t h) :
+      out_image_path(path), out_image(w, h)
+      {
+      }
+
+   ~TextureAtlasInfoWriteVisitor(void)
+      {
+      out_image.write(out_image_path+ ".png");
+      }
+
+   void visit(TextureInfo &im_info,
+              int x, int y, int width, int height, bool rot90)
+      {
+      im_info.writeTo(out_image, x, y, width, height, rot90);
+      }
+
+   private:
+   png::image<png::rgba_pixel> out_image;
+   std::string                 out_image_path;
+   };
 
 int
 main(int argc, char* argv[])
@@ -283,7 +310,10 @@ for(std::list<TextureAtlasInfo *>::iterator atlases_iter = atlases.begin();
       << ") x Height (" << tai->packedHeight()  << ")"
       << std::endl;
 
-   tai->write(atlas_name);
+   TextureAtlasInfoWriteVisitor tai_writer(atlas_name,
+                                           tai->packedWidth(),
+                                           tai->packedHeight());
+   tai->visit(tai_writer);
    }
 
 return 0;
