@@ -1,6 +1,7 @@
 #include "TexturePacker.h"
 #include <assert.h>
 
+#include <cstdlib>
 #pragma warning(disable:4100 4244)
 
 namespace TEXTURE_PACKER
